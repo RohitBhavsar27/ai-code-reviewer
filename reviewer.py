@@ -13,10 +13,13 @@ import subprocess
 import os
 import json
 import google.generativeai as genai
+from functools import lru_cache
 import streamlit as st
+import os
 import os
 
 
+@lru_cache(maxsize=32)
 def run_flake8(code: str) -> str:
     """Run flake8 on the given code and return output as string."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=".py", mode="w") as tmp:
@@ -41,6 +44,7 @@ def run_black_diff(code: str) -> str:
     except Exception as e:
         return f"Black formatting error: {e}"
 
+@lru_cache(maxsize=32)
 def run_black_format(code: str) -> str:
     """Formats the code using black and returns the formatted code."""
     try:
@@ -51,6 +55,7 @@ def run_black_format(code: str) -> str:
 
 
 
+@lru_cache(maxsize=32)
 def run_radon_complexity(code: str) -> str:
     """Calculate cyclomatic complexity of the code."""
     try:
@@ -68,6 +73,7 @@ def run_radon_complexity(code: str) -> str:
         return f"Radon complexity error: {e}"
 
 
+@lru_cache(maxsize=32)
 def get_complexity_data(code: str):
     """Return function names and complexity scores for charting."""
     try:
@@ -79,6 +85,7 @@ def get_complexity_data(code: str):
         return [], []
 
 
+@lru_cache(maxsize=32)
 def run_radon_metrics(code: str) -> str:
     """Calculate maintainability index and raw metrics."""
     try:
@@ -89,6 +96,7 @@ def run_radon_metrics(code: str) -> str:
         return f"Radon metrics error: {e}"
 
 
+@lru_cache(maxsize=32)
 def calculate_doc_ratio(code: str) -> str:
     """Calculate ratio of comments and docstrings to code lines."""
     lines = code.splitlines()
@@ -102,6 +110,7 @@ def calculate_doc_ratio(code: str) -> str:
     return f"📚 Documentation Coverage: {percent}% ({comment_lines} comments, {docstring_lines} docstring lines out of {total_lines} total lines)"
 
 
+@lru_cache(maxsize=32)
 def run_bandit_scan(code: str) -> str:
     """Run bandit security scan on code and return results."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=".py", mode="w") as tmp:
@@ -121,6 +130,7 @@ def run_bandit_scan(code: str) -> str:
 
 
 
+@lru_cache(maxsize=32)
 def get_ai_suggestions(code: str) -> list[dict]:
     """Use Gemini to provide code improvement suggestions in a structured format."""
     try:
@@ -158,6 +168,7 @@ def get_ai_suggestions(code: str) -> list[dict]:
     except Exception as e:
         return [{"line": 0, "suggestion": f"Gemini error: {e}"}]
 
+@lru_cache(maxsize=32)
 def generate_unit_tests(code: str) -> str:
     """Use Gemini to generate basic unit tests for the given code using pytest."""
     try:
@@ -173,19 +184,29 @@ def generate_unit_tests(code: str) -> str:
         return f"Gemini test generation error: {e}"
 
 
-def generate_text_report(code: str) -> str:
+def generate_text_report(code: str, ai_enabled: bool = True) -> str:
 
     """Generate a combined plain text report from all tools."""
-    return (
+    report = (
         "🧹 Black Format Suggestion:\n" + run_black_diff(code) + "\n\n"
         "🔧 Flake8 Linting Report:\n" + run_flake8(code) + "\n\n"
         "📊 Cyclomatic Complexity:\n" + run_radon_complexity(code) + "\n\n"
         "📈 Maintainability Metrics:\n" + run_radon_metrics(code) + "\n\n"
         "📚 Documentation Ratio:\n" + calculate_doc_ratio(code) + "\n\n"
         "🛡️ Security Scan (Bandit):\n" + run_bandit_scan(code) + "\n\n"
-        "🤖 AI-Powered Suggestions:\n" + "\n".join([f"Line {s["line"]}: {s["suggestion"]}" for s in get_ai_suggestions(code)]) + "\n\n"
-        "🧪 Generated Unit Tests:\n" + generate_unit_tests(code) + "\n\n"
     )
+    if ai_enabled:
+        report += (
+            "🤖 AI-Powered Suggestions:\n" + "\n".join([f"Line {s["line"]}: {s["suggestion"]}" for s in get_ai_suggestions(code)]) + "\n\n"
+            "🧪 Generated Unit Tests:\n" + generate_unit_tests(code) + "\n\n"
+        )
+    else:
+        report += (
+            "🤖 AI-Powered Suggestions: AI mode is disabled.\n\n"
+            "🧪 Generated Unit Tests: AI mode is disabled.\n\n"
+        )
+    return report
+
 
 def interleave_comments_with_code(code: str, suggestions: list[dict]) -> str:
     """Interleave AI suggestions as comments within the code."""
