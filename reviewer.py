@@ -22,7 +22,7 @@ import os
 @lru_cache(maxsize=32)
 def run_flake8(code: str) -> str:
     """Run flake8 on the given code and return output as string."""
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".py", mode="w") as tmp:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".py", mode="w", encoding="utf-8") as tmp:
         tmp.write(code)
         tmp_path = tmp.name
 
@@ -113,7 +113,7 @@ def calculate_doc_ratio(code: str) -> str:
 @lru_cache(maxsize=32)
 def run_bandit_scan(code: str) -> str:
     """Run bandit security scan on code and return results."""
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".py", mode="w") as tmp:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".py", mode="w", encoding="utf-8") as tmp:
         tmp.write(code)
         tmp_path = tmp.name
 
